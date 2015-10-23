@@ -105,6 +105,16 @@ void NuPlayer::Decoder::onMessageReceived(const sp<AMessage> &msg) {
     switch (msg->what()) {
         case kWhatCodecNotify:
         {
+            int32_t what;
+            if (msg->findInt32("what", &what) && what == MediaCodec::NU_AUDIO_RECONFIG) {
+                sp<AMessage> audio_para;
+                msg->findMessage("audio-msg", &audio_para);
+                if (mRenderer != NULL) {
+                    mRenderer->setAudioParameter(audio_para);
+                }
+                break;
+            }
+
             if (!isStaleReply(msg)) {
                 int32_t numInput, numOutput;
 
@@ -184,6 +194,9 @@ void NuPlayer::Decoder::onConfigure(const sp<AMessage> &format) {
     mIsSecure = secure;
 
     mCodec->getName(&mComponentName);
+
+    sp<AMessage> notify = new AMessage(kWhatCodecNotify, id());
+    mCodec->setNuplayerNotify(notify);
 
     status_t err;
     if (mNativeWindow != NULL) {
@@ -484,13 +497,6 @@ bool NuPlayer::Decoder::handleAnOutputBuffer() {
         return true;
     } else if (res == INFO_DISCONTINUITY) {
         // nothing to do
-        return true;
-    } else if (res == INFO_AUDIO_RECONFIG) {
-        sp<AMessage> audio_para;
-        mCodec->getAudioParameter(audio_para);
-        if (mRenderer != NULL) {
-            mRenderer->setAudioParameter(audio_para);
-        }
         return true;
     } else if (res != OK) {
         if (res != -EAGAIN) {
