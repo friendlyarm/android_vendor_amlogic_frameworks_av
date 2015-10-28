@@ -297,10 +297,13 @@ status_t LiveSession::dequeueAccessUnit(
                 && extra->findInt64("timeUs", &timeUs)) {
             // seeking only
             mLastSeekTimeUs = getSegmentStartTimeUsAfterSeek(timeUs);
-            mAudioDiscontinuityOffsetTimesUs.clear();
-            mVideoDiscontinuityOffsetTimesUs.clear();
-            mAudioDiscontinuityAbsStartTimesUs.clear();
-            mVideoDiscontinuityAbsStartTimesUs.clear();
+            if (stream == STREAMTYPE_AUDIO) {
+                mAudioDiscontinuityOffsetTimesUs.clear();
+                mAudioDiscontinuityAbsStartTimesUs.clear();
+            } else if (stream == STREAMTYPE_VIDEO) {
+                mVideoDiscontinuityOffsetTimesUs.clear();
+                mVideoDiscontinuityAbsStartTimesUs.clear();
+            }
         }
         return INFO_DISCONTINUITY;
     }

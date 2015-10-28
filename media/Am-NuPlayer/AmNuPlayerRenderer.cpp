@@ -1053,7 +1053,7 @@ void NuPlayer::Renderer::checkFrameDiscontinuity(sp<ABuffer> &buffer, int32_t is
     }
     if (!isAudio && mLastVideoQueueTimeUs >= 0 && timeUs > mLastVideoQueueTimeUs && mVideoFrameDurationUs <= 0) {
         mVideoFrameDurationUs = timeUs - mLastVideoQueueTimeUs;
-        if (mVideoFrameDurationUs < 16000 || mVideoFrameDurationUs > 42000) {
+        if (mVideoFrameDurationUs < 16000 || mVideoFrameDurationUs > 67000) {
             mVideoFrameDurationUs = 0;
         }
     }
