@@ -20,7 +20,7 @@
 
 #include "AmNuPlayerSource.h"
 
-#include "ATSParser.h"
+#include "AmATSParser.h"
 
 namespace android {
 

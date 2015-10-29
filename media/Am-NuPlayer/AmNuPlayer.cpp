@@ -33,7 +33,7 @@
 #include "AmGenericSource.h"
 #include "TextDescriptions.h"
 
-#include "ATSParser.h"
+#include "AmATSParser.h"
 
 #include <cutils/properties.h>
 
@@ -252,7 +252,7 @@ void NuPlayer::setUID(uid_t uid) {
     mUID = uid;
 }
 
-void NuPlayer::setDriver(const wp<NuPlayerDriver> &driver) {
+void NuPlayer::setDriver(const wp<AmNuPlayerDriver> &driver) {
     mDriver = driver;
 }
 
@@ -441,7 +441,7 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             }
 
             CHECK(mDriver != NULL);
-            sp<NuPlayerDriver> driver = mDriver.promote();
+            sp<AmNuPlayerDriver> driver = mDriver.promote();
             if (driver != NULL) {
                 driver->notifySetDataSourceCompleted(err);
             }
@@ -577,7 +577,7 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
 
             int64_t durationUs;
             if (mDriver != NULL && mSource->getDuration(&durationUs) == OK) {
-                sp<NuPlayerDriver> driver = mDriver.promote();
+                sp<AmNuPlayerDriver> driver = mDriver.promote();
                 if (driver != NULL) {
                     driver->notifyDuration(durationUs);
                 }
@@ -1428,7 +1428,7 @@ void NuPlayer::notifyListener(int msg, int ext1, int ext2, const Parcel *in) {
         return;
     }
 
-    sp<NuPlayerDriver> driver = mDriver.promote();
+    sp<AmNuPlayerDriver> driver = mDriver.promote();
 
     if (driver == NULL) {
         return;
@@ -1671,7 +1671,7 @@ void NuPlayer::performReset() {
     }
 
     if (mDriver != NULL) {
-        sp<NuPlayerDriver> driver = mDriver.promote();
+        sp<AmNuPlayerDriver> driver = mDriver.promote();
         if (driver != NULL) {
             driver->notifyResetComplete();
         }
@@ -1701,7 +1701,7 @@ void NuPlayer::performSetSurface(const sp<NativeWindowWrapper> &wrapper) {
     setVideoScalingMode(mVideoScalingMode);
 
     if (mDriver != NULL) {
-        sp<NuPlayerDriver> driver = mDriver.promote();
+        sp<AmNuPlayerDriver> driver = mDriver.promote();
         if (driver != NULL) {
             driver->notifySetSurfaceComplete();
         }
@@ -1736,7 +1736,7 @@ void NuPlayer::finishResume() {
     if (mResumePending) {
         mResumePending = false;
         if (mDriver != NULL) {
-            sp<NuPlayerDriver> driver = mDriver.promote();
+            sp<AmNuPlayerDriver> driver = mDriver.promote();
             if (driver != NULL) {
                 driver->notifySeekComplete();
             }
@@ -1786,7 +1786,7 @@ void NuPlayer::onSourceNotify(const sp<AMessage> &msg) {
                 processDeferredActions();
             }
 
-            sp<NuPlayerDriver> driver = mDriver.promote();
+            sp<AmNuPlayerDriver> driver = mDriver.promote();
             if (driver != NULL) {
                 // notify duration first, so that it's definitely set when
                 // the app received the "prepare complete" callback.
@@ -1805,7 +1805,7 @@ void NuPlayer::onSourceNotify(const sp<AMessage> &msg) {
             uint32_t flags;
             CHECK(msg->findInt32("flags", (int32_t *)&flags));
 
-            sp<NuPlayerDriver> driver = mDriver.promote();
+            sp<AmNuPlayerDriver> driver = mDriver.promote();
             if (driver != NULL) {
                 if ((flags & NuPlayer::Source::FLAG_CAN_SEEK) == 0) {
                     driver->notifyListener(
@@ -1908,7 +1908,7 @@ void NuPlayer::onSourceNotify(const sp<AMessage> &msg) {
             sp<ABuffer> buffer;
             CHECK(msg->findBuffer("buffer", &buffer));
 
-            sp<NuPlayerDriver> driver = mDriver.promote();
+            sp<AmNuPlayerDriver> driver = mDriver.promote();
             if (driver == NULL) {
                 break;
             }

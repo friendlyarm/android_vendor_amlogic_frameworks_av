@@ -30,7 +30,7 @@
 #include <media/stagefright/foundation/AMessage.h>
 #include <media/stagefright/MediaErrors.h>
 
-#include "ATSParser.h"
+#include "AmATSParser.h"
 
 namespace android {
 

@@ -20,7 +20,7 @@
 
 #include "AmRTSPSource.h"
 
-#include "AnotherPacketSource.h"
+#include "AmAnotherPacketSource.h"
 #include "MyHandler.h"
 #include "SDPLoader.h"
 

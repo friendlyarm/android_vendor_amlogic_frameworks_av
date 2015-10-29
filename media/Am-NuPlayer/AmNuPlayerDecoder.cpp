@@ -35,7 +35,7 @@
 #include <media/stagefright/MediaErrors.h>
 
 #include "avc_utils.h"
-#include "ATSParser.h"
+#include "AmATSParser.h"
 
 #define ES_AUDIO_DUMP_PATH    "/data/tmp/nuplayer_audio_es.bit"
 #define ES_VIDEO_DUMP_PATH    "/data/tmp/nuplayer_video_es.bit"

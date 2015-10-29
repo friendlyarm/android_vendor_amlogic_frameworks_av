@@ -27,7 +27,7 @@
 #include "include/avc_utils.h"
 #include "include/HTTPBase.h"
 #include "include/ID3.h"
-#include "mpeg2ts/AnotherPacketSource.h"
+#include "AmAnotherPacketSource.h"
 
 #include <cutils/properties.h>
 #include <media/IStreamSource.h>
@@ -1653,7 +1653,7 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
             source->getFormat()->findCString(kKeyMIMEType, &mime);
             if (type == ATSParser::VIDEO && !strcasecmp(MEDIA_MIMETYPE_VIDEO_HEVC, mime)) {
                 int key = 0;
-                accessUnit->meta()->findInt32("findkeyframe", &key);
+                accessUnit->meta()->findInt32("iskeyframe", &key);
                 if (key == 1) {
                     sp<AMessage> msg = new AMessage(kWhatCodecSpecificData, id());
                     msg->setBuffer("buffer", accessUnit);

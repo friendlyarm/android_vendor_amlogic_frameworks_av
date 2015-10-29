@@ -20,7 +20,7 @@
 
 #include <media/stagefright/foundation/AHandler.h>
 
-#include "mpeg2ts/ATSParser.h"
+#include "AmATSParser.h"
 #include "AmLiveSession.h"
 
 namespace android {

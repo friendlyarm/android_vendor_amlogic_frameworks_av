@@ -19,7 +19,7 @@
 
 #include "AmGenericSource.h"
 
-#include "AnotherPacketSource.h"
+#include "AmAnotherPacketSource.h"
 
 #include <media/IMediaHTTPService.h>
 #include <media/stagefright/foundation/ABuffer.h>

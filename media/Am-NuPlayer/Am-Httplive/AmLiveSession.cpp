@@ -26,7 +26,7 @@
 #include "StreamSniffer.h"
 
 #include "include/HTTPBase.h"
-#include "mpeg2ts/AnotherPacketSource.h"
+#include "AmAnotherPacketSource.h"
 
 #include <cutils/properties.h>
 #include <media/IMediaHTTPConnection.h>
@@ -41,6 +41,7 @@
 #include "include/HTTPBase.h"
 
 #include <media/stagefright/MediaHTTP.h>
+#include <media/stagefright/MediaDefs.h>
 #include <media/stagefright/MetaData.h>
 #include <media/stagefright/Utils.h>
 

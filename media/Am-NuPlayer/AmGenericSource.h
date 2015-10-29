@@ -21,7 +21,7 @@
 #include "AmNuPlayer.h"
 #include "AmNuPlayerSource.h"
 
-#include "ATSParser.h"
+#include "AmATSParser.h"
 
 #include <media/mediaplayer.h>
 

@@ -20,7 +20,7 @@
 
 #include "AmHTTPLiveSource.h"
 
-#include "AnotherPacketSource.h"
+#include "AmAnotherPacketSource.h"
 #include "AmLiveDataSource.h"
 #include "AmLiveSession.h"
 

@@ -27,7 +27,7 @@ namespace android {
 struct ABuffer;
 struct AMessage;
 struct MetaData;
-struct NuPlayerDriver;
+struct AmNuPlayerDriver;
 
 typedef int32_t (*interruptcallback)(android_thread_id_t thread_id);
 
@@ -36,7 +36,7 @@ struct NuPlayer : public AHandler {
 
     void setUID(uid_t uid);
 
-    void setDriver(const wp<NuPlayerDriver> &driver);
+    void setDriver(const wp<AmNuPlayerDriver> &driver);
 
     void setDataSourceAsync(const sp<IStreamSource> &source);
 
@@ -130,7 +130,7 @@ private:
         kWhatSelectTrack                = 'selT',
     };
 
-    wp<NuPlayerDriver> mDriver;
+    wp<AmNuPlayerDriver> mDriver;
     bool mUIDValid;
     uid_t mUID;
     sp<Source> mSource;

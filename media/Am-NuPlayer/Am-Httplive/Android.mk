@@ -14,22 +14,10 @@ LOCAL_C_INCLUDES:= \
 	$(TOP)/frameworks/native/include/media/openmax \
 	$(TOP)/external/openssl/include \
     $(TOP)/external/curl/include \
-    $(TOP)/vendor/amlogic/frameworks/av/LibPlayer/third_parts/libcurl-ffmpeg/include
+    $(TOP)/vendor/amlogic/frameworks/av/LibPlayer/third_parts/libcurl-ffmpeg/include \
+    $(TOP)/vendor/amlogic/frameworks/av/media/Am-NuPlayer/Am-mpeg2ts \
 
 LOCAL_CFLAGS += -Werror
-
-LOCAL_STATIC_LIBRARIES := libstagefright_hevcutils libcurl_base libcurl_common
-
-LOCAL_SHARED_LIBRARIES := \
-        libbinder \
-        libcrypto \
-        libcutils \
-        libmedia \
-        libstagefright \
-        libstagefright_foundation \
-        libutils \
-        libamffmpeg \
-        libcurl
 
 LOCAL_MODULE:= libamhttplive
 
@@ -37,4 +25,4 @@ ifeq ($(TARGET_ARCH),arm)
     LOCAL_CFLAGS += -Wno-psabi
 endif
 
-include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_STATIC_LIBRARY)

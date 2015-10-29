@@ -23,8 +23,8 @@ namespace android {
 struct ALooper;
 struct NuPlayer;
 
-struct NuPlayerDriver : public MediaPlayerInterface {
-    NuPlayerDriver();
+struct AmNuPlayerDriver : public MediaPlayerInterface {
+    AmNuPlayerDriver();
 
     virtual status_t initCheck();
 
@@ -74,7 +74,7 @@ struct NuPlayerDriver : public MediaPlayerInterface {
     void notifyFlagsChanged(uint32_t flags);
 
 protected:
-    virtual ~NuPlayerDriver();
+    virtual ~AmNuPlayerDriver();
 
 private:
     enum State {
@@ -122,7 +122,7 @@ private:
     status_t prepare_l();
     void notifyListener_l(int msg, int ext1 = 0, int ext2 = 0, const Parcel *in = NULL);
 
-    DISALLOW_EVIL_CONSTRUCTORS(NuPlayerDriver);
+    DISALLOW_EVIL_CONSTRUCTORS(AmNuPlayerDriver);
 };
 
 }  // namespace android

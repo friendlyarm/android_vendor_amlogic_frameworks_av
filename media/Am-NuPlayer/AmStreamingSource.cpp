@@ -20,8 +20,8 @@
 
 #include "AmStreamingSource.h"
 
-#include "ATSParser.h"
-#include "AnotherPacketSource.h"
+#include "AmATSParser.h"
+#include "AmAnotherPacketSource.h"
 #include "AmNuPlayerStreamListener.h"
 
 #include <media/stagefright/foundation/ABuffer.h>

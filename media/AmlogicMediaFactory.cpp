@@ -142,7 +142,7 @@ class AmNuPlayerFactory : public MediaPlayerFactory::IFactory {
         if (kOurScore <= curScore)
             return 0.0;
 
-        // use nuplayer to play hls.
+        // use amnuplayer to play hls.
         // add other stream type afterwards.
         if (!strncasecmp("http://", url, 7)
             || !strncasecmp("https://", url, 8)) {
@@ -168,7 +168,7 @@ class AmNuPlayerFactory : public MediaPlayerFactory::IFactory {
 
     virtual sp<MediaPlayerBase> createPlayer() {
         ALOGV(" create AmNuPlayer");
-        return new NuPlayerDriver();
+        return new AmNuPlayerDriver();
     }
 };
 
