@@ -38,6 +38,7 @@
 #include <ui/Rect.h>
 #include "AmlogicPlayerExtractorDemux.h"
 #include <binder/IPCThreadState.h>
+#include <binder/IServiceManager.h>
 #include <SubSource.h>
 #include <media/stagefright/timedtext/TimedTextDriver.h>
 //#include <ui/Overlay.h>
@@ -216,6 +217,13 @@ AmlogicPlayer::AmlogicPlayer() :
     DtsHdStreamType=0;
     dts_dec_control=0;
 
+    sp<IServiceManager> sm = defaultServiceManager();
+    if (sm != NULL) {
+        mSystemControlService = interface_cast<ISystemControlService>(sm->getService(String16("system_control")));
+        if (mSystemControlService == NULL)
+            ALOGE("[%s]cannot get connection to SystemControlService", __FUNCTION__);
+    } else
+        ALOGE("[%s]cannot get default ServiceManager", __FUNCTION__);
 }
 
 int HistoryMgt(const char * path, int r0w1, int mTime)
@@ -623,6 +631,8 @@ AmlogicPlayer::~AmlogicPlayer()
         free(mVideoExtInfo);
         mVideoExtInfo = NULL;
     }
+    if (mSystemControlService.get() != NULL)
+        mSystemControlService.clear();
 
 
 }
@@ -1463,6 +1473,8 @@ status_t AmlogicPlayer::start()
 
     if (mhasVideo && !mRunning) {
         VideoViewOn();
+        if (mSystemControlService != NULL)
+            mSystemControlService->setVideoPlaying(true);
         initVideoSurface();
         if (isHDCPFailed == true) {
             set_sys_int(DISABLE_VIDEO, 1);
@@ -3030,6 +3042,8 @@ status_t AmlogicPlayer::release()
         player_stop(mPlayer_id);
         player_exit(mPlayer_id);
         if (mhasVideo) {
+            if (mSystemControlService != NULL)
+                mSystemControlService->setVideoPlaying(false);
             VideoViewClose();
         }
 
