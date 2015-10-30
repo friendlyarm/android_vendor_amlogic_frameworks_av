@@ -444,6 +444,27 @@ status_t AnotherPacketSource::nextBufferTime(int64_t *timeUs) {
     return OK;
 }
 
+int64_t AnotherPacketSource::peekFirstVideoTimeUs() {
+    Mutex::Autolock autoLock(mLock);
+    if (mIsAudio || mBuffers.size() < PEEK_TIMEUS_THRESHOLD) {
+        return -1;
+    }
+    int32_t count = 0;
+    int64_t timeUs = 0, min_timeUs = -1;
+    List<sp<ABuffer> >::iterator it = mBuffers.begin();
+    while (it != mBuffers.end() && count++ < PEEK_TIMEUS_THRESHOLD) {
+        const sp<ABuffer> &buffer = *it;
+        buffer->meta()->findInt64("timeUs", &timeUs);
+        if (min_timeUs < 0) {
+            min_timeUs = timeUs;
+        } else {
+            min_timeUs = (timeUs < min_timeUs) ? timeUs : min_timeUs;
+        }
+        ++it;
+    }
+    return min_timeUs;
+}
+
 bool AnotherPacketSource::isFinished(int64_t duration) const {
     if (duration > 0) {
         int64_t diff = duration - mLastQueuedTimeUs;

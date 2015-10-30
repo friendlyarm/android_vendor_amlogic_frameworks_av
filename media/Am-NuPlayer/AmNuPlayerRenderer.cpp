@@ -1058,7 +1058,7 @@ void NuPlayer::Renderer::checkFrameDiscontinuity(sp<ABuffer> &buffer, int32_t is
         }
     }
     if (isAudio && mLastAudioQueueTimeUs >= 0 && mAudioFrameDurationUs > 0) {
-        if (llabs(timeUs - mLastAudioQueueTimeUs) > mAudioFrameDurationUs + kFrameJitterThresholdUs) {
+        if (llabs(timeUs - mLastAudioQueueTimeUs) > mAudioFrameDurationUs * 2) {
             bool jitter_flag = true;
             if (mSampleRate && mChannel && (llabs(llabs(timeUs - mLastAudioQueueTimeUs) - ((mLastAudioFrameSize * 1000000ll) / (mSampleRate * mChannel * 2))) < 5)) {
                 jitter_flag = false;
@@ -1071,7 +1071,7 @@ void NuPlayer::Renderer::checkFrameDiscontinuity(sp<ABuffer> &buffer, int32_t is
         }
     }
     if (!isAudio && mLastVideoQueueTimeUs >= 0 && mVideoFrameDurationUs > 0) {
-        if (llabs(timeUs - mLastVideoQueueTimeUs) > mVideoFrameDurationUs + kFrameJitterThresholdUs) {
+        if (llabs(timeUs - mLastVideoQueueTimeUs) > mVideoFrameDurationUs * 2) {
             ALOGI("[%s:%d] video jitter ! timeUs : %lld us, last timeUs : %lld us, duration : %lld us", __FUNCTION__, __LINE__, timeUs, mLastVideoQueueTimeUs, mVideoFrameDurationUs);
             rectify_timeUs = mLastVideoQueueTimeUs + mVideoFrameDurationUs;
             mVideoFrameIntervalUs += rectify_timeUs - timeUs;

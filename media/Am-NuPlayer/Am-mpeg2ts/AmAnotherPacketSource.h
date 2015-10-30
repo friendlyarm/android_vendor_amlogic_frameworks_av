@@ -56,6 +56,8 @@ struct AnotherPacketSource : public MediaSource {
 
     status_t nextBufferTime(int64_t *timeUs);
 
+    int64_t peekFirstVideoTimeUs();
+
     void queueAccessUnit(const sp<ABuffer> &buffer);
 
     void queueDiscontinuity(

@@ -95,7 +95,7 @@ LiveSession::LiveSession(
       mDisconnectReplyID(0),
       mSeekReplyID(0),
       mFirstTimeUsValid(false),
-      mFirstTimeUs(0),
+      mFirstTimeUs(-1),
       mLastSeekTimeUs(0),
       mEOSTimeoutAudio(0),
       mEOSTimeoutVideo(0) {
@@ -367,6 +367,15 @@ status_t LiveSession::dequeueAccessUnit(
 
     status_t err;
     if (stream == STREAMTYPE_VIDEO) {
+        if (mFirstTimeUs < 0) {
+            mFirstTimeUs = packetSource->peekFirstVideoTimeUs();
+            if (mFirstTimeUs < 0) {
+                return -EAGAIN;
+            } else {
+                mFirstTimeUsValid = true;
+                ALOGI("[Video] Found first min timeUs : %lld us", mFirstTimeUs);
+            }
+        }
         // need to send HEVC CodecSpecificData, lost when seek instantly after start.
         if (mSeeked == true && mCodecSpecificData != NULL && !mCodecSpecificDataSend) {
             int cast_size = HEVCCastSpecificData(mCodecSpecificData, mCodecSpecificDataSize);
@@ -504,12 +513,18 @@ status_t LiveSession::dequeueAccessUnit(
             } else if ((*accessUnit)->meta()->findInt32("discard", &discard) && discard) {
                 firstTimeUs = timeUs;
             } else {
+                firstTimeUs = timeUs;
                 if (stream == STREAMTYPE_AUDIO) {
                     mAudioDiscontinuityAbsStartTimesUs.add(strm.mCurDiscontinuitySeq, timeUs);
                 } else {
-                    mVideoDiscontinuityAbsStartTimesUs.add(strm.mCurDiscontinuitySeq, timeUs);
+                    if (mFirstTimeUsValid) {
+                        mVideoDiscontinuityAbsStartTimesUs.add(strm.mCurDiscontinuitySeq, mFirstTimeUs);
+                        firstTimeUs = mFirstTimeUs;
+                        mFirstTimeUsValid = false;
+                    } else {
+                        mVideoDiscontinuityAbsStartTimesUs.add(strm.mCurDiscontinuitySeq, timeUs);
+                    }
                 }
-                firstTimeUs = timeUs;
             }
 
             strm.mLastDequeuedTimeUs = timeUs;
@@ -613,6 +628,9 @@ status_t LiveSession::seekTo(int64_t timeUs) {
 
     sp<AMessage> response;
     status_t err = msg->postAndAwaitResponse(&response);
+
+    mFirstTimeUs = -1;
+    mFirstTimeUsValid = false;
 
     return err;
 }
