@@ -1505,11 +1505,14 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
             continue;
         }
 
-        if (packetSource->getFormat() == NULL) {
+        if (packetSource->getFormat() == NULL && source->getFormat() != NULL) {
             packetSource->setFormat(source->getFormat());
         }
 
-        source_count++;
+        if (source->getFormat() != NULL) {
+            source_count++;
+        }
+
         int64_t timeUs;
         sp<ABuffer> accessUnit;
         status_t finalResult;
@@ -1649,15 +1652,17 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
             }
 
             // send LiveSession the CodecSpecificData
-            const char *mime;
-            source->getFormat()->findCString(kKeyMIMEType, &mime);
-            if (type == ATSParser::VIDEO && !strcasecmp(MEDIA_MIMETYPE_VIDEO_HEVC, mime)) {
-                int key = 0;
-                accessUnit->meta()->findInt32("iskeyframe", &key);
-                if (key == 1) {
-                    sp<AMessage> msg = new AMessage(kWhatCodecSpecificData, id());
-                    msg->setBuffer("buffer", accessUnit);
-                    msg->post();
+            if (source->getFormat() != NULL) {
+                const char *mime;
+                source->getFormat()->findCString(kKeyMIMEType, &mime);
+                if (type == ATSParser::VIDEO && !strcasecmp(MEDIA_MIMETYPE_VIDEO_HEVC, mime)) {
+                    int key = 0;
+                    accessUnit->meta()->findInt32("iskeyframe", &key);
+                    if (key == 1) {
+                        sp<AMessage> msg = new AMessage(kWhatCodecSpecificData, id());
+                        msg->setBuffer("buffer", accessUnit);
+                        msg->post();
+                    }
                 }
             }
 

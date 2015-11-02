@@ -1071,7 +1071,9 @@ void NuPlayer::Renderer::checkFrameDiscontinuity(sp<ABuffer> &buffer, int32_t is
         }
     }
     if (!isAudio && mLastVideoQueueTimeUs >= 0 && mVideoFrameDurationUs > 0) {
-        if (llabs(timeUs - mLastVideoQueueTimeUs) > mVideoFrameDurationUs * 2) {
+        if (llabs(timeUs - mLastVideoQueueTimeUs) > mVideoFrameDurationUs * 2
+            && !((llabs(timeUs - mLastVideoQueueTimeUs) >= mVideoFrameDurationUs * 2 - 100 && llabs(timeUs - mLastVideoQueueTimeUs) <= mVideoFrameDurationUs * 2 + 100)
+            || (llabs(timeUs - mLastVideoQueueTimeUs) >= mVideoFrameDurationUs * 3 - 100 && llabs(timeUs - mLastVideoQueueTimeUs) <= mVideoFrameDurationUs * 3 + 100))) {
             ALOGI("[%s:%d] video jitter ! timeUs : %lld us, last timeUs : %lld us, duration : %lld us", __FUNCTION__, __LINE__, timeUs, mLastVideoQueueTimeUs, mVideoFrameDurationUs);
             rectify_timeUs = mLastVideoQueueTimeUs + mVideoFrameDurationUs;
             mVideoFrameIntervalUs += rectify_timeUs - timeUs;

@@ -932,29 +932,14 @@ void ATSParser::Stream::onPayloadData(
     sp<ABuffer> accessUnit;
     while ((accessUnit = mQueue->dequeueAccessUnit()) != NULL) {
         if (mSource == NULL) {
-            sp<MetaData> meta = mQueue->getFormat();
-
-            if (meta != NULL) {
-                ALOGI("Stream PID 0x%08x of type 0x%02x now has data.",
-                     mElementaryPID, mStreamType);
-
-#if 0
-                const char *mime;
-                if (meta->findCString(kKeyMIMEType, &mime)
-                        && !strcasecmp(mime, MEDIA_MIMETYPE_VIDEO_AVC)
-                        && !IsIDR(accessUnit)) {
-                    continue;
-                }
-#endif
-                mSource = new AnotherPacketSource(meta);
-                mSource->queueAccessUnit(accessUnit);
-            }
-        } else if (mQueue->getFormat() != NULL) {
+            mSource = new AnotherPacketSource(NULL);
+            mSource->queueAccessUnit(accessUnit);
+        } else {
             // After a discontinuity we invalidate the queue's format
             // and won't enqueue any access units to the source until
             // the queue has reestablished the new format.
 
-            if (mSource->getFormat() == NULL) {
+            if (mSource->getFormat() == NULL && mQueue->getFormat() != NULL) {
                 mSource->setFormat(mQueue->getFormat());
             }
             mSource->queueAccessUnit(accessUnit);
