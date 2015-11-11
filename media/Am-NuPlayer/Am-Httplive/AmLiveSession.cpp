@@ -2362,5 +2362,12 @@ void LiveSession::postPrepared(status_t err) {
     //mSwitchDownMonitor->post();
 }
 
+void LiveSession::setFrameRate(float frameRate) {
+    sp<AMessage> notify = mNotify->dup();
+    notify->setInt32("what", kWhatSetFrameRate);
+    notify->setFloat("frame-rate", frameRate);
+    notify->post();
+}
+
 }  // namespace android
 

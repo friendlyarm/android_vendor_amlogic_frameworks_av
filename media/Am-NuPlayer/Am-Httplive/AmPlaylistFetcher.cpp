@@ -55,6 +55,8 @@ const int64_t PlaylistFetcher::kMaxMonitorDelayUs = 3000000ll;
 // LCM of 188 (size of a TS packet) & 1k works well
 const int32_t PlaylistFetcher::kDownloadBlockSize = 47 * 1024;
 const int32_t PlaylistFetcher::kNumSkipFrames = 5;
+// use 12 frames to calculate frame rate
+const size_t  PlaylistFetcher::kFrameNum = 12;
 
 const AString PlaylistFetcher::DumpPath = "/data/tmp/";
 
@@ -90,6 +92,8 @@ PlaylistFetcher::PlaylistFetcher(
       mMonitorQueueGeneration(0),
       mSubtitleGeneration(subtitleGeneration),
       mRefreshState(INITIAL_MINIMUM_RELOAD_DELAY),
+      mEnableFrameRate(false),
+      mFrameRate(-1.0),
       mFirstPTSValid(false),
       mAbsoluteTimeAnchorUs(0ll),
       mVideoBuffer(new AnotherPacketSource(NULL)) {
@@ -104,6 +108,10 @@ PlaylistFetcher::PlaylistFetcher(
     char value1[PROPERTY_VALUE_MAX];
     if (property_get("media.hls.open_retry_s", value1, "3600")) {
         mOpenFailureRetryUs = atoll(value1) * 1000000;
+    }
+    char value2[PROPERTY_VALUE_MAX];
+    if (property_get("media.hls.frame-rate", value, NULL)) {
+        mEnableFrameRate = atoi(value);
     }
 }
 
@@ -1434,6 +1442,11 @@ const sp<ABuffer> &PlaylistFetcher::setAccessUnitProperties(
     return accessUnit;
 }
 
+static status_t int64cmp(const int64_t *a, const int64_t *b )
+{
+    return (status_t)(*a - *b);
+}
+
 status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &buffer) {
     if (mTSParser == NULL) {
         // Use TS_TIMESTAMPS_ARE_ABSOLUTE so pts carry over between fetchers.
@@ -1520,6 +1533,10 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
                 && source->dequeueAccessUnit(&accessUnit) == OK) {
 
             CHECK(accessUnit->meta()->findInt64("timeUs", &timeUs));
+
+            if (mEnableFrameRate && mFrameRate < 0.0 && type == ATSParser::VIDEO && mVecTimeUs.size() < kFrameNum) {
+                mVecTimeUs.push(timeUs);
+            }
 
             if (mStartup) {
                 if (!mFirstPTSValid) {
@@ -1668,6 +1685,19 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
 
             setAccessUnitProperties(accessUnit, source);
             packetSource->queueAccessUnit(accessUnit);
+        }
+
+        if (mEnableFrameRate && mFrameRate < 0.0 && type == ATSParser::VIDEO && mVecTimeUs.size() >= kFrameNum) {
+            mVecTimeUs.sort(int64cmp);
+            int64_t durations = 0;
+            size_t size = mVecTimeUs.size() / 2;
+
+            for (size_t n = 1; n <= size; n++) {
+                durations += (mVecTimeUs[n] - mVecTimeUs[n-1]);
+            }
+
+            mFrameRate = 1000000.0 * size / durations;
+            mSession->setFrameRate(mFrameRate);
         }
 
         if (err != OK) {

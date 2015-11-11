@@ -171,6 +171,11 @@ private:
 
     sp<ATSParser> mTSParser;
 
+    bool mEnableFrameRate;
+    float mFrameRate;
+    Vector<int64_t> mVecTimeUs;
+    static const size_t kFrameNum;
+
     bool mFirstPTSValid;
     uint64_t mFirstPTS;
     int64_t mFirstTimeUs;

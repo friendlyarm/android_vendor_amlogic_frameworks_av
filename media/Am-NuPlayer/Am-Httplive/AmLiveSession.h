@@ -96,12 +96,15 @@ struct LiveSession : public AHandler {
 
     void setParentThreadId(android_thread_id_t thread_id);
 
+    void setFrameRate(float frameRate);
+
     enum {
         kWhatStreamsChanged,
         kWhatError,
         kWhatPrepared,
         kWhatPreparationFailed,
         kWhatSourceReady,
+        kWhatSetFrameRate,
     };
 
     // create a format-change discontinuity
