@@ -972,14 +972,16 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
     status_t dummy_err;
     CFContext * cfc_handle = NULL;
     mPlaylist = fetchPlaylist(url.c_str(), NULL /* curPlaylistHash */, &dummy, dummy_err, &cfc_handle);
+    int httpCode = 0;
     if (cfc_handle) {
+        httpCode = -cfc_handle->http_code;
         curl_fetch_close(cfc_handle);
     }
 
     if (mPlaylist == NULL) {
         ALOGE("unable to fetch master playlist %s.", uriDebugString(url).c_str());
 
-        postPrepared(ERROR_IO);
+        postPrepared(httpCode);
         return;
     }
 
@@ -1264,7 +1266,8 @@ ssize_t LiveSession::fetchFile(
         curl_fetch_set_parent_pid(temp_cfc, mParentThreadId);
         if (curl_fetch_open(temp_cfc)) {
             ALOGE("curl fetch open failed! http code : %d", temp_cfc->http_code);
-            curl_fetch_close(temp_cfc);
+            //curl_fetch_close(temp_cfc);
+            *cfc = temp_cfc;
             temp_cfc = NULL;
             return ERROR_CANNOT_CONNECT;
         }

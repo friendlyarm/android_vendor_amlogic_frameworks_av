@@ -802,7 +802,9 @@ status_t PlaylistFetcher::refreshPlaylist() {
         CFContext * cfc_handle = NULL;
         sp<M3UParser> playlist = mSession->fetchPlaylist(
                 mURI.c_str(), mPlaylistHash, &unchanged, err, &cfc_handle);
+        int httpCode = 0;
         if (cfc_handle) {
+            httpCode = -cfc_handle->http_code;
             curl_fetch_close(cfc_handle);
         }
 
@@ -814,7 +816,7 @@ status_t PlaylistFetcher::refreshPlaylist() {
             } else {
                 if (ALooper::GetNowUs() - mFailureAnchorTimeUs >= mOpenFailureRetryUs) {
                     ALOGI("[%s:%d] open failure retry time exceed %lld us", __FUNCTION__, __LINE__, mOpenFailureRetryUs);
-                    return ERROR_IO;
+                    return httpCode;
                 } else {
                     return err;
                 }
@@ -990,10 +992,9 @@ void PlaylistFetcher::onDownloadNext() {
             // fall through
         } else {
             ALOGE("Cannot find sequence number %d in playlist "
-                 "(contains %d - %d)",
-                 mSeqNumber, firstSeqNumberInPlaylist,
-                  firstSeqNumberInPlaylist + (int32_t)mPlaylist->size() - 1);
-
+                "(contains %d - %d)",
+                mSeqNumber, firstSeqNumberInPlaylist,
+                firstSeqNumberInPlaylist + (int32_t)mPlaylist->size() - 1);
             notifyError(ERROR_END_OF_STREAM);
             return;
         }
@@ -1105,7 +1106,7 @@ void PlaylistFetcher::onDownloadNext() {
                 if (ALooper::GetNowUs() - mFailureAnchorTimeUs >= mOpenFailureRetryUs) {
                     ALOGI("[%s:%d] open failure retry time exceed %lld us", __FUNCTION__, __LINE__, mOpenFailureRetryUs);
                     status_t err = bytesRead;
-                    notifyError(err);
+                    notifyError(-cfc_handle->http_code);
                     goto FAIL;
                 }
             }
@@ -1232,6 +1233,8 @@ void PlaylistFetcher::onDownloadNext() {
                 packetSource->clear();
             }
             ++mSeqNumber;
+            ALOGE("ts parser met error, need to reset!");
+            queueDiscontinuity(ATSParser::DISCONTINUITY_DATA_CORRUPTION, NULL);
             postMonitorQueue();
             goto FAIL;
         } else if (err == ERROR_OUT_OF_RANGE) {
@@ -1287,7 +1290,9 @@ void PlaylistFetcher::onDownloadNext() {
 
                 mStreamTypeMask &= ~streamType;
                 //mPacketSources.removeItem(streamType);
-                (mPacketSources.valueFor(streamType))->setValid(false);
+                if (mPacketSources.indexOfKey(streamType) >= 0) {
+                    (mPacketSources.valueFor(streamType))->setValid(false);
+                }
             }
         }
 
@@ -1307,8 +1312,13 @@ void PlaylistFetcher::onDownloadNext() {
                 || tsBuffer->size() > 16) {
             ALOGE("MPEG2 transport stream is not an even multiple of 188 "
                     "bytes in length.");
-            notifyError(ERROR_MALFORMED);
-            return;
+            //notifyError(ERROR_MALFORMED);
+            //return;
+            if (mTSParser != NULL) {
+                mTSParser.clear();
+            }
+            ALOGE("ts packet not complete!");
+            queueDiscontinuity(ATSParser::DISCONTINUITY_DATA_CORRUPTION, NULL);
         }
     }
 

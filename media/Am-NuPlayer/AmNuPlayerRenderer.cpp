@@ -1031,7 +1031,7 @@ void NuPlayer::Renderer::checkFrameDiscontinuity(sp<ABuffer> &buffer, int32_t is
     }
     if (isAudio && mAudioTimeStamp >= 0 && mAudioTimeStamp == timeUs) {
         // reset, no need to correct pts.
-        ALOGI("[%:%d] Audio timestamp match ! timeUs : %lld us", __FUNCTION__, __LINE__, timeUs);
+        ALOGI("[%s:%d] Audio timestamp match ! timeUs : %lld us", __FUNCTION__, __LINE__, timeUs);
         mAudioTimeStamp = -1;
         mLastAudioQueueTimeUs = -1;
         mAudioFrameIntervalUs = 0;
@@ -1039,7 +1039,7 @@ void NuPlayer::Renderer::checkFrameDiscontinuity(sp<ABuffer> &buffer, int32_t is
     }
     if (!isAudio && mVideoTimeStamp >= 0 && mVideoTimeStamp == timeUs) {
         // reset, no need to correct pts.
-        ALOGI("[%:%d] Video timestamp match ! timeUs : %lld us", __FUNCTION__, __LINE__, timeUs);
+        ALOGI("[%s:%d] Video timestamp match ! timeUs : %lld us", __FUNCTION__, __LINE__, timeUs);
         mVideoTimeStamp = -1;
         mLastVideoQueueTimeUs = -1;
         mVideoFrameIntervalUs = 0;
