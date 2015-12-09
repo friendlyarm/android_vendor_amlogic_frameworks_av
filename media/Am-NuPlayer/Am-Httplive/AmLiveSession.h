@@ -259,6 +259,8 @@ private:
     bool mFirstTimeUsValid;
     int64_t mFirstTimeUs;
     int64_t mLastSeekTimeUs;
+    int64_t mAudioFirstTimeUs;
+    int64_t mVideoFirstTimeUs;
 
     int64_t mEOSTimeoutAudio;
     int64_t mEOSTimeoutVideo;

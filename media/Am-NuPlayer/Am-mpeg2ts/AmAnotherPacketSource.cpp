@@ -40,6 +40,7 @@ const int64_t kNearEOSMarkUs = 2000000ll; // 2 secs
 AnotherPacketSource::AnotherPacketSource(const sp<MetaData> &meta)
     : mIsAudio(false),
       mIsVideo(false),
+      mIsValid(true),
       mFormat(NULL),
       mLastQueuedTimeUs(0),
       mEOSResult(OK),
@@ -484,6 +485,16 @@ sp<AMessage> AnotherPacketSource::getLatestEnqueuedMeta() {
 sp<AMessage> AnotherPacketSource::getLatestDequeuedMeta() {
     Mutex::Autolock autoLock(mLock);
     return mLatestDequeuedMeta;
+}
+
+void AnotherPacketSource::setValid(bool valid) {
+    Mutex::Autolock autoLock(mLock);
+    mIsValid = valid;
+}
+
+bool AnotherPacketSource::getValid() {
+    Mutex::Autolock autoLock(mLock);
+    return mIsValid;
 }
 
 }  // namespace android

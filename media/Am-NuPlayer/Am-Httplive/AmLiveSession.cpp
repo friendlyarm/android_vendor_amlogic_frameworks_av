@@ -97,6 +97,8 @@ LiveSession::LiveSession(
       mFirstTimeUsValid(false),
       mFirstTimeUs(-1),
       mLastSeekTimeUs(0),
+      mAudioFirstTimeUs(-1),
+      mVideoFirstTimeUs(-1),
       mEOSTimeoutAudio(0),
       mEOSTimeoutVideo(0) {
     char value[PROPERTY_VALUE_MAX];
@@ -168,51 +170,36 @@ bool LiveSession::haveSufficientDataOnAVTracks() {
     sp<AnotherPacketSource> audioTrack = mPacketSources.valueFor(STREAMTYPE_AUDIO);
     sp<AnotherPacketSource> videoTrack = mPacketSources.valueFor(STREAMTYPE_VIDEO);
 
-    if (audioTrack == NULL && videoTrack == NULL) {
+    if ((audioTrack == NULL || !audioTrack->getValid())
+        && (videoTrack == NULL || !videoTrack->getValid())) {
         ALOGI("no audio and video track!\n");
         return false;
     }
 
     int64_t mediaDurationUs = 0;
     getDuration(&mediaDurationUs);
-    if ((audioTrack != NULL && audioTrack->isFinished(mediaDurationUs))
-            || (videoTrack != NULL && videoTrack->isFinished(mediaDurationUs))) {
+    if ((audioTrack != NULL && audioTrack->getValid() && audioTrack->isFinished(mediaDurationUs))
+            || (videoTrack != NULL && videoTrack->getValid() && videoTrack->isFinished(mediaDurationUs))) {
         ALOGI("audio or video finished!\n");
         return true;
     }
 
     status_t err;
-    int64_t durationUs, estimate;
-    bool buffer_flag = true;
-    if (audioTrack != NULL) {
-        estimate = audioTrack->getEstimatedBytesPerSec();
-        // just estimate, prevent wrong duration caused by pts jitter.
-        if ((durationUs = audioTrack->getBufferedDurationUs(&err)) < kMinDurationUs && err == OK) {
-            buffer_flag = false;
-        }
-        if (!buffer_flag && estimate) {
-            if (audioTrack->getBufferedDataSize() >= mBuffTimeSec * estimate) {
-                buffer_flag = true;
-            }
-        }
-        if (!buffer_flag) {
-            return false;
-        }
+    int64_t durationUs;
+    if (audioTrack != NULL && audioTrack->getValid()
+        && (durationUs = audioTrack->getBufferedDurationUs(&err)) < kMinDurationUs
+        && err == OK) {
+        ALOGV("audio track doesn't have enough data yet. (%.2f secs buffered)",
+        durationUs / 1E6);
+        return false;
     }
-    if (videoTrack != NULL) {
-        estimate = videoTrack->getEstimatedBytesPerSec();
-        // just estimate, prevent wrong duration caused by pts jitter.
-        if ((durationUs = videoTrack->getBufferedDurationUs(&err)) < kMinDurationUs && err == OK) {
-            buffer_flag = false;
-        }
-        if (!buffer_flag && estimate) {
-            if (videoTrack->getBufferedDataSize() >= mBuffTimeSec * estimate) {
-                buffer_flag = true;
-            }
-        }
-        if (!buffer_flag) {
-            return false;
-        }
+
+    if (videoTrack != NULL && videoTrack->getValid()
+        && (durationUs = videoTrack->getBufferedDurationUs(&err)) < kMinDurationUs
+        && err == OK) {
+        ALOGV("video track doesn't have enough data yet. (%.2f secs buffered)",
+        durationUs / 1E6);
+        return false;
     }
 
     ALOGI("audio and video track have enough data!\n");
@@ -230,7 +217,7 @@ void LiveSession::setEOSTimeout(bool audio, int64_t timeout) {
 status_t LiveSession::hasBufferAvailable(bool audio, bool * needBuffering) {
     StreamType stream = audio ? STREAMTYPE_AUDIO : STREAMTYPE_VIDEO;
     sp<AnotherPacketSource> t_source = mPacketSources.valueFor(stream);
-    if (t_source == NULL) {
+    if (t_source == NULL || !t_source->getValid()) {
         return -EWOULDBLOCK;
     }
     status_t finalResult;
@@ -243,7 +230,7 @@ status_t LiveSession::hasBufferAvailable(bool audio, bool * needBuffering) {
             status_t otherFinalResult;
 
             // If other source already signaled EOS, this source should also signal EOS
-            if (otherSource != NULL &&
+            if (otherSource != NULL && otherSource->getValid() &&
                     !otherSource->hasBufferAvailable(&otherFinalResult) &&
                     otherFinalResult == ERROR_END_OF_STREAM) {
                 t_source->signalEOS(ERROR_END_OF_STREAM);
@@ -264,7 +251,7 @@ status_t LiveSession::hasBufferAvailable(bool audio, bool * needBuffering) {
                 return -EWOULDBLOCK;
             }
 
-            if (!(otherSource != NULL && otherSource->isFinished(mediaDurationUs))) {
+            if (!(otherSource != NULL && otherSource->getValid() && otherSource->isFinished(mediaDurationUs))) {
                 // We should not enter buffering mode
                 // if any of the sources already have detected EOS.
                 *needBuffering = true;
@@ -373,6 +360,7 @@ status_t LiveSession::dequeueAccessUnit(
                 return -EAGAIN;
             } else {
                 mFirstTimeUsValid = true;
+                mVideoFirstTimeUs = mFirstTimeUs;
                 ALOGI("[Video] Found first min timeUs : %lld us", mFirstTimeUs);
             }
         }
@@ -527,6 +515,12 @@ status_t LiveSession::dequeueAccessUnit(
                 }
             }
 
+            if (stream == STREAMTYPE_AUDIO) {
+                if (mAudioFirstTimeUs < 0) {
+                    mAudioFirstTimeUs = firstTimeUs;
+                }
+            }
+
             strm.mLastDequeuedTimeUs = timeUs;
             if (timeUs >= firstTimeUs) {
                 timeUs -= firstTimeUs;
@@ -539,6 +533,13 @@ status_t LiveSession::dequeueAccessUnit(
             } else if (stream == STREAMTYPE_VIDEO && mVideoDiscontinuityOffsetTimesUs.indexOfKey(discontinuitySeq) >= 0) {
                 offset_timeUs = mVideoDiscontinuityOffsetTimesUs.valueFor(discontinuitySeq);
                 timeUs += offset_timeUs;
+            }
+
+            if (stream == STREAMTYPE_VIDEO) {
+                if (mAudioFirstTimeUs >= 0 && mVideoFirstTimeUs >= 0
+                    && llabs(mAudioFirstTimeUs - mVideoFirstTimeUs) > 100000) {
+                    timeUs += mVideoFirstTimeUs - mAudioFirstTimeUs;
+                }
             }
 
             if (mDebug) {
@@ -630,6 +631,8 @@ status_t LiveSession::seekTo(int64_t timeUs) {
     status_t err = msg->postAndAwaitResponse(&response);
 
     mFirstTimeUs = -1;
+    mAudioFirstTimeUs = -1;
+    mVideoFirstTimeUs = -1;
     mFirstTimeUsValid = false;
 
     return err;
@@ -1269,7 +1272,7 @@ ssize_t LiveSession::fetchFile(
     }
 
     size = (*cfc)->filesize;
-    if (isPlaylist && size > 1 * 1024 * 1024) { // assume not m3u8.
+    if (isPlaylist && size > 10 * 1024 * 1024) { // assume not m3u8.
         sp<AMessage> notify = mNotify->dup();
         notify->setInt32("what", kWhatSourceReady);
         notify->setInt32("err", 1);

@@ -701,6 +701,8 @@ void PlaylistFetcher::onMonitorQueue() {
 
     int64_t bufferedDurationUs = 0ll;
     int64_t bufferedDataSize = 0ll;
+    int64_t audioBufferedDurationUs = -1;
+    int64_t videoBufferedDurationUs = -1;
     status_t finalResult = NOT_ENOUGH_DATA;
     if (mStreamTypeMask == LiveSession::STREAMTYPE_SUBTITLES) {
         sp<AnotherPacketSource> packetSource =
@@ -724,12 +726,18 @@ void PlaylistFetcher::onMonitorQueue() {
                 mPacketSources.valueAt(i)->getBufferedDurationUs(&finalResult);
             ALOGV("buffered %" PRId64 " for stream %d",
                     bufferedStreamDurationUs, mPacketSources.keyAt(i));
+            if (mPacketSources.keyAt(i) == LiveSession::STREAMTYPE_AUDIO) {
+                audioBufferedDurationUs = bufferedStreamDurationUs;
+            } else if (mPacketSources.keyAt(i) == LiveSession::STREAMTYPE_VIDEO) {
+                videoBufferedDurationUs = bufferedStreamDurationUs;
+            }
             if (bufferedStreamDurationUs > bufferedDurationUs) {
                 bufferedDurationUs = bufferedStreamDurationUs;
             }
         }
     }
 
+#if 0
     if (bufferedDataSize && mSegmentBytesPerSec) {
         int64_t adjust_durationUs = (bufferedDataSize / (mSegmentBytesPerSec * 0.9)) * 1E6;
         if (llabs(adjust_durationUs - bufferedDurationUs) > durationToBufferUs) {
@@ -737,9 +745,16 @@ void PlaylistFetcher::onMonitorQueue() {
             bufferedDurationUs = adjust_durationUs;
         }
     }
+#endif
 
     downloadMore = (bufferedDurationUs < durationToBufferUs);
 
+    if (audioBufferedDurationUs >= 0 && videoBufferedDurationUs >= 0
+        && llabs(audioBufferedDurationUs - videoBufferedDurationUs) > kMinBufferedDurationUs / 2) {
+        downloadMore = true;
+    }
+
+#if 0
     // signal start if buffered up at least the target size
     if (!mPrepared && bufferedDurationUs > targetDurationUs && downloadMore) {
         mPrepared = true;
@@ -751,8 +766,9 @@ void PlaylistFetcher::onMonitorQueue() {
         msg->setString("uri", mURI.c_str());
         msg->post();
     }
+#endif
 
-    if (finalResult == OK && downloadMore) {
+    if (finalResult == OK && (downloadMore || !mPostPrepared)) {
         ALOGV("monitoring, buffered=%" PRId64 " < %" PRId64 "",
                 bufferedDurationUs, durationToBufferUs);
         // delay the next download slightly; hopefully this gives other concurrent fetchers
@@ -770,7 +786,8 @@ void PlaylistFetcher::onMonitorQueue() {
         msg->post();
         mFetchingNotify = true;
         ALOGV("buffered=%" PRId64 " > %" PRId64 "", bufferedDurationUs, durationToBufferUs);
-        postMonitorQueue(bufferedDurationUs / 2, 1000000ll);
+        postMonitorQueue((bufferedDurationUs / 2) > kMinBufferedDurationUs
+            ? (kMinBufferedDurationUs / 2) : (bufferedDurationUs / 2), 1000000ll); // maybe pts wrong.
     }
 }
 
@@ -1269,7 +1286,8 @@ void PlaylistFetcher::onDownloadNext() {
                       srcType == ATSParser::VIDEO ? "video" : "audio");
 
                 mStreamTypeMask &= ~streamType;
-                mPacketSources.removeItem(streamType);
+                //mPacketSources.removeItem(streamType);
+                (mPacketSources.valueFor(streamType))->setValid(false);
             }
         }
 

@@ -870,6 +870,7 @@ sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnitH265() {
                     meta->setInt32(kKeyHeight, info.mheight);
                     mFormat = meta;
                     ALOGI("found HEVC video codec config (%d x %d)", info.mwidth, info.mheight);
+                    break;
                 }
             }
         }
