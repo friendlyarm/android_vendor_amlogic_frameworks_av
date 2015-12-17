@@ -1723,13 +1723,21 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
         }
     }
 
-    if (!mPostPrepared && source_count == mPacketSources.size()) {
-        ALOGI("packet source prepared!\n");
-        mPostPrepared = true;
-        sp<AMessage> msg = mNotify->dup();
-        msg->setInt32("what", kWhatTemporarilyDoneFetching);
-        msg->setString("uri", mURI.c_str());
-        msg->post();
+    if (!mPostPrepared) {
+        size_t valid_source_count = 0;
+        for (size_t i = 0; i < mPacketSources.size(); i++) {
+            if (mPacketSources.valueAt(i)->getValid()) {
+                valid_source_count++;
+            }
+        }
+        if (source_count == valid_source_count) {
+            ALOGI("packet source prepared!\n");
+            mPostPrepared = true;
+            sp<AMessage> msg = mNotify->dup();
+            msg->setInt32("what", kWhatTemporarilyDoneFetching);
+            msg->setString("uri", mURI.c_str());
+            msg->post();
+        }
     }
 
     if (err != OK) {
