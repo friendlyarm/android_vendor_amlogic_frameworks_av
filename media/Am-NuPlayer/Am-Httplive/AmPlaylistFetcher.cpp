@@ -103,7 +103,6 @@ PlaylistFetcher::PlaylistFetcher(
       mAudioSource(NULL),
       mVideoSource(NULL),
       mEnableFrameRate(false),
-      mFrameRate(-1.0),
       mFirstPTSValid(false),
       mAbsoluteTimeAnchorUs(0ll),
       mVideoBuffer(new AnotherPacketSource(NULL)) {
@@ -1631,7 +1630,7 @@ status_t PlaylistFetcher::queueAccessUnits() {
 
             CHECK(accessUnit->meta()->findInt64("timeUs", &timeUs));
 
-            if (mEnableFrameRate && mFrameRate < 0.0 && type == ATSParser::VIDEO && mVecTimeUs.size() < kFrameNum) {
+            if (mEnableFrameRate && mSession->getFrameRate() < 0.0 && type == ATSParser::VIDEO && mVecTimeUs.size() < kFrameNum) {
                 mVecTimeUs.push(timeUs);
             }
 
@@ -1785,7 +1784,7 @@ status_t PlaylistFetcher::queueAccessUnits() {
         }
 
 
-        if (mEnableFrameRate && mFrameRate < 0.0 && type == ATSParser::VIDEO && mVecTimeUs.size() >= kFrameNum) {
+        if (mEnableFrameRate && mSession->getFrameRate() < 0.0 && type == ATSParser::VIDEO && mVecTimeUs.size() >= kFrameNum) {
             mVecTimeUs.sort(int64cmp);
             int64_t durations = 0;
             size_t size = mVecTimeUs.size() / 2;
@@ -1794,8 +1793,7 @@ status_t PlaylistFetcher::queueAccessUnits() {
                 durations += (mVecTimeUs[n] - mVecTimeUs[n-1]);
             }
 
-            mFrameRate = 1000000.0 * size / durations;
-            mSession->setFrameRate(mFrameRate);
+            mSession->setFrameRate(1000000.0 * size / durations);
         }
 
         if (err != OK) {

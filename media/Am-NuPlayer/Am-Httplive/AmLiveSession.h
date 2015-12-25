@@ -97,6 +97,7 @@ struct LiveSession : public AHandler {
     void setParentThreadId(android_thread_id_t thread_id);
 
     void setFrameRate(float frameRate);
+    float getFrameRate() const { return mFrameRate; };
 
     enum {
         kWhatStreamsChanged,
@@ -266,6 +267,8 @@ private:
     int64_t mEOSTimeoutVideo;
 
     sp<AMessage> mSwitchDownMonitor;
+
+    float mFrameRate;
 
     sp<PlaylistFetcher> addFetcher(const char *uri);
 

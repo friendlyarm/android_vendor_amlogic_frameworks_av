@@ -100,7 +100,8 @@ LiveSession::LiveSession(
       mAudioFirstTimeUs(-1),
       mVideoFirstTimeUs(-1),
       mEOSTimeoutAudio(0),
-      mEOSTimeoutVideo(0) {
+      mEOSTimeoutVideo(0),
+      mFrameRate(-1.0) {
     char value[PROPERTY_VALUE_MAX];
     if (property_get("media.hls.read_pts", value, NULL)
         && (!strcmp(value, "1") || !strcasecmp(value, "true"))) {
@@ -2369,6 +2370,7 @@ void LiveSession::postPrepared(status_t err) {
 }
 
 void LiveSession::setFrameRate(float frameRate) {
+    mFrameRate = frameRate;
     sp<AMessage> notify = mNotify->dup();
     notify->setInt32("what", kWhatSetFrameRate);
     notify->setFloat("frame-rate", frameRate);

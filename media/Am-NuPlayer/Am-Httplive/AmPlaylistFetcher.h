@@ -180,7 +180,6 @@ private:
     sp<AnotherPacketSource> mVideoSource;
 
     bool mEnableFrameRate;
-    float mFrameRate;
     Vector<int64_t> mVecTimeUs;
     static const size_t kFrameNum;
 
