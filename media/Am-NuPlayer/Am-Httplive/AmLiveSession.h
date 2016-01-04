@@ -99,6 +99,8 @@ struct LiveSession : public AHandler {
     void setFrameRate(float frameRate);
     float getFrameRate() const { return mFrameRate; };
 
+    void setSubTrackIndex(size_t subTrackIndex) { mSubTrackIndex = subTrackIndex; }
+
     enum {
         kWhatStreamsChanged,
         kWhatError,
@@ -269,6 +271,8 @@ private:
     sp<AMessage> mSwitchDownMonitor;
 
     float mFrameRate;
+
+    size_t mSubTrackIndex;
 
     sp<PlaylistFetcher> addFetcher(const char *uri);
 

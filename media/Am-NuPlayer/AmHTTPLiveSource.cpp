@@ -47,6 +47,7 @@ NuPlayer::HTTPLiveSource::HTTPLiveSource(
       mFinalResult(OK),
       mOffset(0),
       mFetchSubtitleDataGeneration(0),
+      mHasSub(false),
       mInterruptCallback(pfunc) {
     if (headers) {
         mExtraHeaders = *headers;
@@ -189,16 +190,24 @@ ssize_t NuPlayer::HTTPLiveSource::getSelectedTrack(media_track_type type) const 
 status_t NuPlayer::HTTPLiveSource::selectTrack(size_t trackIndex, bool select, int64_t /*timeUs*/) {
     status_t err = mLiveSession->selectTrack(trackIndex, select);
 
-#if 0
     if (err == OK) {
-        mFetchSubtitleDataGeneration++;
-        if (select) {
-            sp<AMessage> msg = new AMessage(kWhatFetchSubtitleData, id());
-            msg->setInt32("generation", mFetchSubtitleDataGeneration);
-            msg->post();
+        int32_t trackType;
+        sp<AMessage> format = mLiveSession->getTrackInfo(trackIndex);
+        if (format != NULL && format->findInt32("type", &trackType)
+                && trackType == MEDIA_TRACK_TYPE_SUBTITLE) {
+            mFetchSubtitleDataGeneration++;
+            if (select) {
+                mHasSub = true;
+                mLiveSession->setSubTrackIndex(trackIndex);
+                sp<AMessage> msg = new AMessage(kWhatFetchSubtitleData, id());
+                msg->setInt32("generation", mFetchSubtitleDataGeneration);
+                msg->post();
+            } else {
+                mHasSub = false;
+            }
         }
     }
-#endif
+
     // LiveSession::selectTrack returns BAD_VALUE when selecting the currently
     // selected track, or unselecting a non-selected track. In this case it's an
     // no-op so we return OK.
@@ -206,6 +215,11 @@ status_t NuPlayer::HTTPLiveSource::selectTrack(size_t trackIndex, bool select, i
 }
 
 status_t NuPlayer::HTTPLiveSource::seekTo(int64_t seekTimeUs) {
+    if (mHasSub) {
+        sp<AMessage> msg = new AMessage(kWhatFetchSubtitleData, id());
+        msg->setInt32("generation", mFetchSubtitleDataGeneration);
+        msg->post();
+    }
     return mLiveSession->seekTo(seekTimeUs);
 }
 
